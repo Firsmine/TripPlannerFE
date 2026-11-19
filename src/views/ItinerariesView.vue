@@ -149,8 +149,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <MainNavbar />
   <div class="app-layout">
+    <MainNavbar />
     <main class="app-main">
       <div class="page-container">
         <!-- Page Header -->

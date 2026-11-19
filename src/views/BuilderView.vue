@@ -1,49 +1,71 @@
 <script setup>
+import MainNavbar from '@/components/mainNavbar.vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useBuilderStore } from '@/stores/builder'
+import { useRoute } from 'vue-router'
+const route = useRoute()
+
+const builderStore = useBuilderStore()
+const slug = computed(() => route.params.slug)
+const expandedBlockId = ref(null)
+const showAddSectionPanel = ref(false)
+const showDeleteModal = ref(false)
+const deletingBlock = ref(null)
+
+onMounted(async () => {
+  document.title = 'TripPlanner | Builder'
+  try {
+    await Promise.all([builderStore.fetchItinerary(slug.value), builderStore.fetchTemplates()])
+  } catch (error) {
+    console.error('Failed to initialize builder:', error)
+  }
+  window.addEventListener('keydown', handleKeyboard)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboard)
+})
+
+// open close block panel
+function openAddSectionPanel() {
+  showAddSectionPanel.value = true
+}
+function closeAddSectionPanel() {
+  showAddSectionPanel.value = false
+}
+// shortcuts
 function handleKeyboard(event) {
-  // alt + s: open add section panel
   if (event.altKey && event.key.toLowerCase() === 's') {
     event.preventDefault()
     openAddSectionPanel()
   }
-  // esc: close panel
   if (event.key === 'Escape') {
-    closeAddSectionPanel()
+    if (showDeleteModal.value) {
+      closeDeleteModal()
+    } else {
+      closeAddSectionPanel()
+      expandedBlockId.value = null
+    }
   }
+}
+
+// block editor
+function toggleBlock(blockId) {
+  expandedBlockId.value = expandedBlockId.value === blockId ? null : blockId
+}
+// delete
+function openDeleteModal(block) {
+  deletingBlock.value = block
+  showDeleteModal.value = true
+}
+function closeDeleteModal() {
+  showDeleteModal.value = false
+  deletingBlock.value = null
 }
 </script>
 
 <template>
   <div class="app-layout">
-    <!-- Navbar -->
-    <nav class="navbar">
-      <a href="itineraries.html" class="navbar__brand"> TripPlanner </a>
-      <div class="navbar__actions">
-        <button class="navbar__menu-toggle" type="button" aria-label="Menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <button class="btn btn--ghost btn--sm" type="button">
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 13 13"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="6.5" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.5" />
-            <path
-              d="M1 12c0-2.485 2.462-4.5 5.5-4.5S12 9.515 12 12"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="square"
-            />
-          </svg>
-          John Doe
-        </button>
-        <button class="btn btn--ghost btn--sm" type="button">Logout</button>
-      </div>
-    </nav>
+    <MainNavbar />>
 
     <div class="app-main">
       <div class="builder-layout">
@@ -53,12 +75,12 @@ function handleKeyboard(event) {
           <div class="builder-toolbar">
             <div class="builder-toolbar__left">
               <div class="builder-breadcrumb">
-                <a href="itineraries.html">Itineraries</a>
+                <RouterLink to="/itineraries">Itineraries</RouterLink>
                 <span>→</span>
-                <span>Japan Spring Trip</span>
+                <span>{{ builderStore.itinerary?.title }}</span>
               </div>
               <div class="builder-toolbar__divider"></div>
-              <span class="tag">3 blocks</span>
+              <span class="tag"> {{ builderStore.itinerary?.blocks?.length || 0 }} blocks </span>
             </div>
             <div class="navbar__actions">
               <a href="preview.html" class="btn btn--ghost btn--sm">
@@ -84,71 +106,61 @@ function handleKeyboard(event) {
 
           <!-- Canvas -->
           <div class="builder-canvas">
+            <div v-if="builderStore.loading">Loading itinerary...</div>
             <!-- Field editor: Trip Overview Block (open/active) -->
-            <div class="field-editor field-editor--open">
-              <div class="field-editor__header">
-                <div>
-                  <div class="field-editor__title">
-                    <span class="tag">01</span>
-                    &nbsp; Trip Overview
+            <div v-else-if="builderStore.itinerary">
+              <div
+                class="field-editor field-editor--open"
+                v-for="(block, index) in builderStore.itinerary.blocks"
+                :key="block.id"
+              >
+                <div class="field-editor__header" @click="toggleBlock(block.id)">
+                  <div>
+                    <div class="field-editor__title">
+                      <span class="tag">
+                        {{ String(index + 1).padStart(2, '0') }}
+                      </span>
+                      {{ block.title }}
+                    </div>
+                    <div class="field-editor__meta">template: {{ block.template?.slug }}</div>
                   </div>
-                  <div class="field-editor__meta">template: overview</div>
+                  <div class="field-editor__toggle">
+                    <span>Collapse</span>
+                    <svg
+                      class="field-editor__chevron"
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1 1l5 5 5-5"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="square"
+                      />
+                    </svg>
+                  </div>
                 </div>
-                <div class="field-editor__toggle">
-                  <span>Collapse</span>
-                  <svg
-                    class="field-editor__chevron"
-                    width="12"
-                    height="8"
-                    viewBox="0 0 12 8"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1 1l5 5 5-5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="square"
-                    />
-                  </svg>
+                <div class="field-editor__body" v-if="expandedBlockId === block.id">
+                  <select v-model="builderStore.selectedTemplate" class="form-input">
+                    <option value="" disabled>Choose a template...</option>
+                    <option
+                      v-for="template in builderStore.templates"
+                      :key="template.id"
+                      :value="template.id"
+                    >
+                      {{ template.slug }} — {{ template.name }}
+                    </option>
+                  </select>
                 </div>
-              </div>
-              <div class="field-editor__body">
-                <div class="form-group">
-                  <label class="form-label" for="f-overview-destination">Destination</label>
-                  <input
-                    class="form-input"
-                    type="text"
-                    id="f-overview-destination"
-                    placeholder="Enter destination…"
-                    value="Kyoto & Tokyo, Japan"
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="f-overview-dates">Trip Dates</label>
-                  <input
-                    class="form-input"
-                    type="text"
-                    id="f-overview-dates"
-                    placeholder="Enter trip dates…"
-                    value="5 - 12 April 2026"
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="f-overview-image">Cover Image URL</label>
-                  <input
-                    class="form-input"
-                    type="url"
-                    id="f-overview-image"
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-              </div>
-              <div class="field-editor__footer">
-                <div class="shortcuts-hint"><span class="kbd">Esc</span> to close</div>
-                <div class="field-editor__footer-actions">
-                  <button class="btn btn--ghost btn--sm" type="button">Remove</button>
-                  <button class="btn btn--primary btn--sm" type="button">Save</button>
+                <div class="field-editor__footer">
+                  <div class="shortcuts-hint"><span class="kbd">Esc</span> to close</div>
+                  <div class="field-editor__footer-actions">
+                    <button class="btn btn--ghost btn--sm" type="button">Remove</button>
+                    <button class="btn btn--primary btn--sm" type="button">Save</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -249,23 +261,38 @@ function handleKeyboard(event) {
   <!-- ======================================================
       MODAL: Confirm Remove Block
       ====================================================== -->
-  <!--
   <div class="modal-backdrop">
-    <div class="modal confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-remove-title">
+    <div
+      class="modal confirm-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-remove-title"
+    >
       <div class="modal__header">
         <h2 class="modal__title" id="modal-remove-title">Remove Block</h2>
         <button class="modal__close" type="button" aria-label="Close">✕</button>
       </div>
       <div class="modal__body">
         <div class="confirm-dialog__icon">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M11 4v7" stroke="#c0392b" stroke-width="2" stroke-linecap="square"/>
-            <circle cx="11" cy="16" r="1" fill="#c0392b"/>
-            <path d="M3 19L11 3l8 16H3z" stroke="#c0392b" stroke-width="2" stroke-linejoin="round"/>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 22 22"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M11 4v7" stroke="#c0392b" stroke-width="2" stroke-linecap="square" />
+            <circle cx="11" cy="16" r="1" fill="#c0392b" />
+            <path
+              d="M3 19L11 3l8 16H3z"
+              stroke="#c0392b"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
           </svg>
         </div>
         <p class="confirm-dialog__text">
-          Remove <strong>"Trip Overview"</strong> from this itinerary?<br>
+          Remove <strong>"Trip Overview"</strong> from this itinerary?<br />
           This action cannot be undone.
         </p>
       </div>
@@ -275,5 +302,4 @@ function handleKeyboard(event) {
       </div>
     </div>
   </div>
-  -->
 </template>
