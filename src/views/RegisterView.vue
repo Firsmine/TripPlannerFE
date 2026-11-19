@@ -40,20 +40,6 @@
             autocomplete="email"
             required
           />
-          <span class="form-error">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 13 13"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="6.5" cy="6.5" r="5.5" stroke="#c0392b" stroke-width="1.5" />
-              <path d="M6.5 4v3" stroke="#c0392b" stroke-width="1.5" stroke-linecap="square" />
-              <circle cx="6.5" cy="9" r="0.7" fill="#c0392b" />
-            </svg>
-            This email address is already registered.
-          </span>
         </div>
 
         <!-- Password field -->
