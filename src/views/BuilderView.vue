@@ -5,7 +5,6 @@ function handleKeyboard(event) {
     event.preventDefault()
     openAddSectionPanel()
   }
-
   // esc: close panel
   if (event.key === 'Escape') {
     closeAddSectionPanel()
