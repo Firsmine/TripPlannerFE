@@ -8,10 +8,6 @@
       </div>
 
       <form class="auth-card__body" @submit.prevent="handleLogin">
-        <div v-if="errorMessage" class="form-error">
-          {{ errorMessage }}
-        </div>
-
         <!-- Email field -->
         <div class="form-group">
           <label class="form-label" for="email">Email Address</label>
@@ -40,6 +36,9 @@
             autocomplete="current-password"
             required
           />
+        </div>
+        <div v-if="errorMessage" class="form-error">
+          {{ errorMessage }}
         </div>
 
         <button class="btn btn--primary btn--full" type="submit" :disabled="loading">
@@ -71,9 +70,9 @@ async function handleLogin() {
   loading.value = true
 
   try {
-    await authStore.register(email.value, password.value)
-  } catch (error) {
-    errorMessage.value = error.response?.data?.message || 'Login failed. Please try again.'
+    await authStore.login(email.value, password.value)
+  } catch {
+    errorMessage.value = 'Login failed. Email or password is incorrect.'
   } finally {
     loading.value = false
   }

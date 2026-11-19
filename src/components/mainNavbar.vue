@@ -1,27 +1,3 @@
-<script setup>
-import api from '@/services/api'
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-const isLoggingOut = ref(false)
-
-async function logout() {
-  isLoggingOut.value = true
-
-  try {
-    await api.post('/logout')
-    localStorage.removeItem('access_token')
-    router.replace('/login')
-  } catch (error) {
-    console.error('Logout failed', error)
-    alert(error.response?.data?.message || 'Failed to logout. Please try again.')
-  } finally {
-    isLoggingOut.value = false
-  }
-}
-</script>
-
 <template>
   <nav class="navbar">
     <RouterLink to="/itineraries" class="navbar__brand"> TripPlanner </RouterLink>
@@ -47,7 +23,7 @@ async function logout() {
             stroke-linecap="square"
           />
         </svg>
-        John Doe
+        {{ user?.name || 'Guest' }}
       </button>
       <button class="btn btn--ghost btn--sm" type="button" @click="logout" :disabled="isLoggingOut">
         <svg
@@ -76,3 +52,24 @@ async function logout() {
     </div>
   </nav>
 </template>
+<script setup>
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const isLoggingOut = ref(false)
+const { user } = storeToRefs(authStore)
+
+async function logout() {
+  isLoggingOut.value = true
+  try {
+    await authStore.logout()
+  } catch (error) {
+    console.error('Logout failed', error)
+    alert(error.response?.data?.message || 'Failed to logout. Please try again.')
+  } finally {
+    isLoggingOut.value = false
+  }
+}
+</script>

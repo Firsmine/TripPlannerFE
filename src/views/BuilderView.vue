@@ -1,3 +1,18 @@
+<script setup>
+function handleKeyboard(event) {
+  // alt + s: open add section panel
+  if (event.altKey && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    openAddSectionPanel()
+  }
+
+  // esc: close panel
+  if (event.key === 'Escape') {
+    closeAddSectionPanel()
+  }
+}
+</script>
+
 <template>
   <div class="app-layout">
     <!-- Navbar -->
