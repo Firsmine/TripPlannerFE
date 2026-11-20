@@ -29,7 +29,7 @@ export const useBuilderStore = defineStore('builder', () => {
   async function fetchTemplates() {
     try {
       const response = await api.get('/templates')
-      templates.value = response.data.data
+      templates.value = response.data.data.templates
       return templates.value
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to load templates'

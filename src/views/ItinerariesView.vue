@@ -3,10 +3,6 @@ import MainNavbar from '@/components/mainNavbar.vue'
 import { useItineraryStore } from '@/stores/itineraries'
 import { ref, onMounted, watch, onUnmounted } from 'vue'
 
-onMounted(() => {
-  document.title = 'TripPlanner | My Itineraries'
-})
-
 const itineraryStore = useItineraryStore()
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -95,7 +91,6 @@ async function saveItinerary() {
     closeModal()
   } catch (error) {
     pageError.value = error.response?.data?.message || 'Failed to save itinerary'
-
     console.error(error)
   } finally {
     saving.value = false
@@ -136,11 +131,13 @@ function handleKeyboard(event) {
   }
 }
 onMounted(async () => {
+  document.title = 'TripPlanner | My Itineraries'
   window.addEventListener('keydown', handleKeyboard)
   try {
     await itineraryStore.fetchItineraries()
   } catch (error) {
     pageError.value = error.response?.data?.message || 'Failed to load itineraries'
+    console.error(error)
   }
 })
 onUnmounted(() => {
@@ -185,13 +182,16 @@ onUnmounted(() => {
 
         <!-- Loading -->
         <div v-if="itineraryStore.loading">Loading itineraries...</div>
-        <!-- Error message
-        <div v-if="pageError && !showModal" class="form-error">
+        <!-- Error message -->
+        <div v-else-if="pageError" class="form-error">
+          {{ pageError }}
+        </div>
+        <!-- <div v-if="pageError && !showModal" class="form-error">
           {{ pageError }}
         </div> -->
 
         <!-- Itineraries List -->
-        <div class="pages-grid">
+        <div class="pages-grid" v-else-if="itineraryStore.itineraries.length > 0">
           <div
             v-for="itinerary in itineraryStore.itineraries"
             :key="itinerary.slug"
@@ -199,10 +199,9 @@ onUnmounted(() => {
           >
             <div class="page-item__info">
               <span class="page-item__title">
-                <RouterLink :to="`/builder/${itinerary.slug}`">
+                <RouterLink :to="`/itineraries/${itinerary.slug}/builder`">
                   {{ itinerary.title }}
                 </RouterLink>
-
                 <span class="page-item__title-arrow">→</span>
               </span>
 
@@ -216,7 +215,10 @@ onUnmounted(() => {
             </div>
 
             <div class="page-item__actions">
-              <RouterLink :to="`/builder/${itinerary.slug}`" class="btn btn--ghost btn--sm">
+              <RouterLink
+                :to="`/itineraries/${itinerary.slug}/builder`"
+                class="btn btn--ghost btn--sm"
+              >
                 Build
               </RouterLink>
 
@@ -239,9 +241,7 @@ onUnmounted(() => {
           </div>
         </div>
         <!-- Empty State -->
-        <p v-if="itineraryStore.itineraries.length === 0">
-          You don't have any itineraries yet. Create your first itinerary!
-        </p>
+        <!-- <p v-else>You don't have any itineraries yet. Create your first itinerary!</p> -->
       </div>
     </main>
   </div>

@@ -12,7 +12,12 @@ export const useItineraryStore = defineStore('itinerary', () => {
     loading.value = true
     try {
       const response = await api.get('/itineraries')
-      itineraries.value = response.data.data
+      const result = response.data.data.itineraries
+      itineraries.value = Array.isArray(result)
+        ? result
+        : Array.isArray(result?.data)
+          ? result.data
+          : []
     } catch (error) {
       console.error('Failed to fetch itineraries', error)
       throw error
@@ -69,6 +74,7 @@ export const useItineraryStore = defineStore('itinerary', () => {
     }
   }
 
+  // delete
   async function deleteItinerary(slug) {
     try {
       await api.delete(`/itineraries/${slug}`)

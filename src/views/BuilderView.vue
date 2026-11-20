@@ -54,12 +54,15 @@ function closeAddSectionPanel() {
 async function handleAddBlock() {
   if (!builderStore.selectedTemplate) return
   try {
+    const nextPosition = (builderStore.itinerary?.blocks?.length || 0) + 1
+
     await builderStore.addBlock(slug.value, {
       template_id: builderStore.selectedTemplate,
+      position: nextPosition,
     })
     closeAddSectionPanel()
   } catch (error) {
-    console.error('Failed to add block:', error)
+    console.error('Failed to add block:', error.response?.data || error)
   }
 }
 function normalizeFields(fields) {
@@ -176,7 +179,7 @@ function endDrag() {
   draggedBlockId.value = null
 }
 function goToPreview() {
-  router.push(`/preview/${slug.value}`)
+  router.push(`/itineraries/${slug.value}/preview`)
 }
 </script>
 
