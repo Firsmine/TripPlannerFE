@@ -78,6 +78,7 @@ export const useBuilderStore = defineStore('builder', () => {
       }
       return updatedBlock
     } catch (err) {
+      console.error('Update block error:', err.response?.data)
       error.value = err.response?.data?.message || 'Failed to update block'
       throw err
     } finally {
@@ -91,11 +92,8 @@ export const useBuilderStore = defineStore('builder', () => {
     error.value = ''
     try {
       const response = await api.put(`/itineraries/${slug}/blocks/reorder`, payload)
-      const updatedBlocks = response.data.data
-      if (Array.isArray(updatedBlocks)) {
-        itinerary.value.blocks = updatedBlocks
-      }
-      return updatedBlocks
+      itinerary.value = response.data.data
+      return itinerary.value
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to reorder blocks'
       throw err

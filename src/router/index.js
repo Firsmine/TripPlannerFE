@@ -42,18 +42,17 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const authenticated = isAuthenticated()
   if (to.meta.guestOnly && authenticated) {
-    return next('/itineraries')
+    return { name: 'itineraries' }
   }
   if (to.meta.requiresAuth && !authenticated) {
-    return next({
-      name: '/login',
+    return {
+      name: 'login',
       query: { redirect: to.fullPath },
-    })
+    }
   }
-  next()
 })
 
 export default router

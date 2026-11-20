@@ -18,6 +18,10 @@ const draggedBlockId = ref(null)
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyboard)
+  if (!slug.value) {
+    console.error('Missing itinerary slug in route params:', route.params)
+    return
+  }
   try {
     await Promise.all([builderStore.fetchItinerary(slug.value), builderStore.fetchTemplates()])
     document.title = `TripPlanner | ${builderStore.itinerary?.title || 'Builder'}`
@@ -104,17 +108,20 @@ function toggleBlock(block) {
     return
   }
   expandedBlockId.value = block.id
-  blockForm.value = normalizeFields(block.fields)
+  blockForm.value = normalizeFields(block.fields?.length ? block.fields : block.template.fields)
 }
 async function saveBlock(block) {
   try {
-    await builderStore.updateBlockFields(slug.value, block.id, {
-      fields: blockForm.value,
-    })
+    const fields = block.template.fields.map((field) => ({
+      field_id: field.id,
+      value: blockForm.value[field.name] ?? '',
+    }))
+    await builderStore.updateBlockFields(slug.value, block.id, { fields })
     expandedBlockId.value = null
     blockForm.value = {}
+    await builderStore.fetchItinerary(slug.value)
   } catch (error) {
-    console.error('Failed to save block:', error)
+    console.error('Failed to save block:', error.response?.data || error)
   }
 }
 
@@ -162,14 +169,14 @@ async function dropBlock(targetBlock) {
   reorderedBlocks.splice(newIndex, 0, movedBlock)
   try {
     await builderStore.reorderBlocks(slug.value, {
-      blocks: reorderedBlocks.map((block, index) => ({
-        id: block.id,
-        order: index + 1,
-      })),
+      blocks: reorderedBlocks.map((block) => block.id),
     })
-    builderStore.itinerary.blocks = reorderedBlocks
+    builderStore.itinerary.blocks = reorderedBlocks.map((block, index) => ({
+      ...block,
+      position: index + 1,
+    }))
   } catch (error) {
-    console.error('Failed to reorder blocks:', error)
+    console.error('Failed to reorder blocks:', error.response?.data || error)
     await builderStore.fetchItinerary(slug.value)
   } finally {
     draggedBlockId.value = null
@@ -185,7 +192,7 @@ function goToPreview() {
 
 <template>
   <div class="app-layout">
-    <MainNavbar />>
+    <MainNavbar />
 
     <div class="app-main">
       <div class="builder-layout">
