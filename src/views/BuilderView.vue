@@ -112,8 +112,12 @@ function toggleBlock(block) {
 }
 async function saveBlock(block) {
   try {
-    const fields = block.template.fields.map((field) => ({
-      field_id: field.id,
+    const template = block.template?.fields
+      ? block.template
+      : builderStore.templates.find((t) => t.id === (block.template_id ?? block.template?.id))
+    const templateFields = template?.fields || block.fields || []
+    const fields = templateFields.map((field) => ({
+      field_id: field.id ?? field.field_id,
       value: blockForm.value[field.name] ?? '',
     }))
     await builderStore.updateBlockFields(slug.value, block.id, { fields })
