@@ -41,7 +41,11 @@ export const useItineraryStore = defineStore('itinerary', () => {
     try {
       const response = await api.post('/itineraries', formData)
       const newItinerary = response.data.data
-      itineraries.value.unshift(newItinerary)
+      if (Array.isArray(itineraries.value)) {
+        itineraries.value.unshift(newItinerary)
+      } else {
+        itineraries.value = [newItinerary]
+      }
       return newItinerary
     } catch (error) {
       console.error('Failed to create a new itinerary', error)
